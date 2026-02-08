@@ -2,7 +2,6 @@
 using System.ComponentModel; // Cần cái này để dùng BindingList
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TestChecker.Sync; // Gọi file "Người quản lý" bạn vừa tạo lúc nãy
 
 namespace TestChecker.Helpers
 {
@@ -20,14 +19,33 @@ namespace TestChecker.Helpers
                 action();
             }
         }
-
-        // Hàm 2: "Câu lệnh thần thánh" - Đây chính là cái công tắc (Mới)
-        // Sau này bạn chỉ cần gọi .SyncWithFirebase() là xong
-        public static async Task SyncWithFirebase<T>(this BindingList<T> list, Control owner, string nodeName) where T : class, new()
+        // --- HÀM MỚI: Dạy BindingList cách thêm cả danh sách ---
+        public static void AddRange<T>(this BindingList<T> bindingList, IEnumerable<T> collection)
         {
-            // Tự động tạo ra người quản lý và bảo nó bắt đầu làm việc
-            var coordinator = new FirebaseSync<T>(owner, list, nodeName);
-            await coordinator.StartAsync();
+            // 1. Tắt tính năng vẽ (để Grid không bị nháy liên tục)
+            bool oldRaiseEvents = bindingList.RaiseListChangedEvents;
+            bindingList.RaiseListChangedEvents = false;
+
+            try
+            {
+                // 2. Thêm từng cái (Bên dưới C# vẫn phải chạy loop, nhưng code mình nhìn gọn hơn)
+                foreach (var item in collection)
+                {
+                    bindingList.Add(item);
+                }
+            }
+            finally
+            {
+                // 3. Bật lại tính năng vẽ
+                bindingList.RaiseListChangedEvents = oldRaiseEvents;
+
+                // 4. Báo cho Grid vẽ lại 1 lần duy nhất (Reset)
+                if (bindingList.RaiseListChangedEvents)
+                {
+                    bindingList.ResetBindings();
+                }
+            }
         }
     }
+
 }

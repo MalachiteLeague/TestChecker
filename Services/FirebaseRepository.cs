@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TestChecker.Helpers; // Để dùng SafeInvoke
-using TestChecker.Sync;  // Để dùng FirebaseSync
 
 namespace TestChecker.Services
 {
@@ -30,11 +29,16 @@ namespace TestChecker.Services
             var initialData = await _globalService.LoadInitialDataAsync<System.Collections.Generic.Dictionary<string, T>>(_nodeName);
             if (initialData != null)
             {
+                var listItems = new List<T>();
                 foreach (var item in initialData)
                 {
                     SetId(item.Value, item.Key);
-                    dataSource.Add(item.Value);
+                    listItems.Add(item.Value);
                 }
+
+                listItems = listItems.OrderByDescending(x => GetId(x)).ToList();
+                // Gọi hàm mở rộng vừa viết
+                dataSource.AddRange(listItems);
             }
 
             // 2. Đăng ký nhận tin từ Tổng đài
