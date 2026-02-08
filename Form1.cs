@@ -1,34 +1,60 @@
 ﻿using System;
-using System.ComponentModel; // Để dùng BindingList
+using System.ComponentModel;
 using System.Windows.Forms;
-using TestChecker.Helpers;   // Để dùng lệnh .SyncWithFirebase
+using System.Xml.Linq;
 using TestChecker.Models;
-using TestChecker.Services;// Để dùng class Product
+using TestChecker.Services;
 
 namespace TestChecker
 {
     public partial class Form1 : Form
     {
-        // 1. Tạo một danh sách sản phẩm (Ban đầu rỗng)
-        // BindingList là loại danh sách đặc biệt, nó thay đổi thì Grid tự đổi theo
-        BindingList<Product> danhSachSanPham = new BindingList<Product>();
+        // Khai báo Repository chuyên quản lý Product
+        private FirebaseRepository<Product> _productRepo;
+        private BindingList<Product> _products = new BindingList<Product>();
 
         public Form1()
         {
             InitializeComponent();
-            dataGridView1.DataSource = danhSachSanPham;
+            dataGridView1.DataSource = _products;
 
-            // BẬT TỔNG ĐÀI LÊN (Chỉ gọi 1 lần duy nhất trong toàn bộ App)
+            // 1. Kích hoạt Tổng đài (chỉ 1 lần duy nhất cho cả app)
             GlobalSyncService.Instance.Start();
 
-            this.Load += async (s, e) =>
-            {
-                // Các lệnh này chỉ đăng ký vào tổng đài chứ không mở socket mới
-                await danhSachSanPham.SyncWithFirebase(this, "products");
+            // 2. Khởi tạo Repository cho bảng "products"
+            _productRepo = new FirebaseRepository<Product>("products");
 
-                // Sau này có thêm bảng khác thì cứ gọi tiếp, vẫn chung 1 đường dây
-                // await customers.SyncWithFirebase(this, "customers");
-            };
+            // 3. Kích hoạt tự động đồng bộ
+            this.Load += async (s, e) => await _productRepo.BindToGridAsync(this, _products);
+        }
+
+        // --- CÁC NÚT BẤM GIỜ CHỈ GỌI HÀM CÓ SẴN ---
+
+        private async void btnAdd_Click(object sender, EventArgs e)
+        {
+            var p = new Product { Name = "a", Price = 1000, Stock = 5 };
+
+            // Gọi hàm Add có sẵn -> Xong!
+            await _productRepo.Add(p);
+        }
+
+        private async void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.CurrentRow?.DataBoundItem is Product selected)
+            {
+                selected.Price += 100;
+                // Gọi hàm Update có sẵn -> Xong!
+                await _productRepo.Update(selected);
+            }
+        }
+
+        private async void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.CurrentRow?.DataBoundItem is Product selected)
+            {
+                // Gọi hàm Delete có sẵn -> Xong!
+                await _productRepo.Delete(selected);
+            }
         }
     }
 }
