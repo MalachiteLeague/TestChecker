@@ -44,10 +44,18 @@ namespace TestChecker
         {
             this.SafeInvoke(() => {
                 string time = DateTime.Now.ToString("HH:mm:ss");
+
+                // 1. Chèn dòng mới
                 lstLog.Items.Insert(0, $"[{time}] {message}");
+
+                // 2. TỐI ƯU HÓA: Chỉ giữ lại 100 dòng log gần nhất
+                // Nếu quá 100 dòng thì xóa bớt dòng cũ ở cuối đi
+                while (lstLog.Items.Count > 100)
+                {
+                    lstLog.Items.RemoveAt(lstLog.Items.Count - 1);
+                }
             });
         }
-
         private async Task StartListening()
         {
             await _jobRepo.BindToGridAsync(this, _jobs);

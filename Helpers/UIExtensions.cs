@@ -10,9 +10,13 @@ namespace TestChecker.Helpers
         // Hàm 1: Giúp cập nhật giao diện an toàn (Cũ)
         public static void SafeInvoke(this Control control, Action action)
         {
+            // Kiểm tra nếu control đã bị hủy (tắt form) thì không làm gì cả -> Tránh lỗi Crash khi tắt App
+            if (control == null || control.IsDisposed) return;
+
             if (control.InvokeRequired)
             {
-                control.Invoke(new MethodInvoker(action));
+                // SỬA: Dùng BeginInvoke thay vì Invoke để không chặn luồng chính
+                control.BeginInvoke(new MethodInvoker(action));
             }
             else
             {

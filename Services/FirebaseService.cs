@@ -25,8 +25,13 @@ namespace TestChecker.Services
         private readonly string _baseUrl;
         private readonly string _secret;
 
-        // HttpClient dùng chung (static) để tối ưu socket
-        private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite) };
+        private static readonly HttpClient _httpClient = new HttpClient(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(15) // Quan trọng: Tránh lỗi DNS khi chạy lâu
+        })
+        {
+            Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite)
+        };
 
         private CancellationTokenSource _cancelTokenSource;
         private readonly object _serviceLock = new object();
