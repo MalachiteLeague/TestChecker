@@ -35,9 +35,9 @@
             // dataGridView1
             // 
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Location = new Point(272, 56);
+            dataGridView1.Location = new Point(445, 55);
             dataGridView1.Name = "dataGridView1";
-            dataGridView1.Size = new Size(240, 150);
+            dataGridView1.Size = new Size(250, 186);
             dataGridView1.TabIndex = 0;
             // 
             // Form1

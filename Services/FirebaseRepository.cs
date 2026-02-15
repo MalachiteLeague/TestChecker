@@ -3,11 +3,12 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TestChecker.Helpers; // Để dùng SafeInvoke
+using TestChecker.Models;
 
 namespace TestChecker.Services
 {
     // Class này gói gọn mọi thao tác với 1 bảng cụ thể (VD: Bảng Product)
-    public class FirebaseRepository<T> where T : class, new()
+    public class FirebaseRepository<T> where T : class, IModel, new()
     {
         private readonly string _nodeName;
         private readonly GlobalSyncService _globalService;
@@ -98,7 +99,7 @@ namespace TestChecker.Services
         }
 
         // --- Helper lấy ID động ---
-        private void SetId(T obj, string id) => typeof(T).GetProperty("Id")?.SetValue(obj, id);
-        private string GetId(T obj) => typeof(T).GetProperty("Id")?.GetValue(obj) as string;
+        private void SetId(T obj, string id) => obj.Id = id;
+        private string GetId(T obj) => obj.Id;
     }
 }
