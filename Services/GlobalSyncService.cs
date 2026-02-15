@@ -7,13 +7,10 @@ namespace TestChecker.Services
 {
     public class GlobalSyncService
     {
-        // Singleton: Đảm bảo toàn bộ app chỉ có đúng 1 instance này
         private static GlobalSyncService _instance;
         public static GlobalSyncService Instance => _instance ??= new GlobalSyncService();
 
         private FirebaseService _firebaseService;
-
-        // Danh sách các bảng đang chờ tin (Dictionary: Tên bảng -> Hàm xử lý)
         private Dictionary<string, List<Action<FirebaseDataEventArgs>>> _subscribers
             = new Dictionary<string, List<Action<FirebaseDataEventArgs>>>();
 
@@ -22,83 +19,54 @@ namespace TestChecker.Services
 
         private GlobalSyncService()
         {
-            // Khởi tạo Service kết nối vào ROOT (gốc)
             _firebaseService = new FirebaseService(FirebaseConfig.BASE_URL, FirebaseConfig.API_SECRET);
-
-            // Đăng ký nhận mọi tin tức
             _firebaseService.OnDataChanged += OnGlobalDataChanged;
             _firebaseService.OnItemDeleted += OnGlobalItemDeleted;
         }
 
-        public void Start()
-        {
-            // Bắt đầu mở Socket lắng nghe toàn bộ Database
-            _firebaseService.StartListening();
-        }
+        public void Start() => _firebaseService.StartListening();
 
-        // --- ĐĂNG KÝ (CÁC BẢNG CON GỌI HÀM NÀY) ---
         public void Subscribe(string nodeName, Action<FirebaseDataEventArgs> onUpdate, Action<FirebaseDeleteEventArgs> onDelete)
         {
-            // Đăng ký Update
-            if (!_subscribers.ContainsKey(nodeName))
-                _subscribers[nodeName] = new List<Action<FirebaseDataEventArgs>>();
+            if (!_subscribers.ContainsKey(nodeName)) _subscribers[nodeName] = new List<Action<FirebaseDataEventArgs>>();
             _subscribers[nodeName].Add(onUpdate);
 
-            // Đăng ký Delete
-            if (!_deleteSubscribers.ContainsKey(nodeName))
-                _deleteSubscribers[nodeName] = new List<Action<FirebaseDeleteEventArgs>>();
-            _deleteSubscribers[nodeName].Add(onDelete);
-        }
+            if (!_deleteSubscribers.ContainsKey(nodeName)) _deleteSubscribers[nodeName] = new List<Action<FirebaseDeleteEventArgs>>();
 
-        // --- PHÂN PHỐI TIN TỨC (DISPATCHER) ---
-        private void OnGlobalDataChanged(object sender, FirebaseDataEventArgs e)
-        {
-            // e.RootNode chính là tên bảng (vd: "products", "customers")
-            if (_subscribers.ContainsKey(e.RootNode))
+            // Chỉ thêm vào danh sách nếu hành động đó không bị Null
+            if (onDelete != null)
             {
-                // Gửi tin cho tất cả ai đang quan tâm đến bảng này
-                foreach (var action in _subscribers[e.RootNode])
-                {
-                    action(e);
-                }
+                _deleteSubscribers[nodeName].Add(onDelete);
             }
         }
 
+        private void OnGlobalDataChanged(object sender, FirebaseDataEventArgs e)
+        {
+            if (_subscribers.ContainsKey(e.RootNode))
+            {
+                // Dùng ToList() để tránh lỗi "Collection was modified" nếu list bị đổi khi đang chạy
+                var actions = new List<Action<FirebaseDataEventArgs>>(_subscribers[e.RootNode]);
+                foreach (var action in actions) action?.Invoke(e);
+            }
+        }
+
+        // --- HÀM VỪA SỬA ---
         private void OnGlobalItemDeleted(object sender, FirebaseDeleteEventArgs e)
         {
             if (_deleteSubscribers.ContainsKey(e.RootNode))
             {
-                foreach (var action in _deleteSubscribers[e.RootNode])
+                var actions = new List<Action<FirebaseDeleteEventArgs>>(_deleteSubscribers[e.RootNode]);
+                foreach (var action in actions)
                 {
-                    action(e);
+                    // Thêm ?.Invoke để an toàn tuyệt đối
+                    action?.Invoke(e);
                 }
             }
         }
 
-        // Hàm hỗ trợ tải dữ liệu ban đầu (Load Snapshot)
-        public async Task<T> LoadInitialDataAsync<T>(string path)
-        {
-            return await _firebaseService.GetDataAsync<T>(path);
-        }
-        // --- PHẦN GỬI DỮ LIỆU (MỚI THÊM) ---
-
-        // 1. Gửi lệnh THÊM MỚI
-        public async Task<string> AddDataAsync<T>(string nodeName, T data)
-        {
-            // Gọi thằng đệ tử _firebaseService làm việc
-            return await _firebaseService.AddDataAsync(nodeName, data);
-        }
-
-        // 2. Gửi lệnh CẬP NHẬT
-        public async Task UpdateDataAsync<T>(string path, T data)
-        {
-            await _firebaseService.UpdateDataAsync(path, data);
-        }
-
-        // 3. Gửi lệnh XÓA
-        public async Task DeleteDataAsync(string path)
-        {
-            await _firebaseService.DeleteDataAsync(path);
-        }
+        public async Task<T> LoadInitialDataAsync<T>(string path) => await _firebaseService.GetDataAsync<T>(path);
+        public async Task<string> AddDataAsync<T>(string nodeName, T data) => await _firebaseService.AddDataAsync(nodeName, data);
+        public async Task UpdateDataAsync<T>(string path, T data) => await _firebaseService.UpdateDataAsync(path, data);
+        public async Task DeleteDataAsync(string path) => await _firebaseService.DeleteDataAsync(path);
     }
 }

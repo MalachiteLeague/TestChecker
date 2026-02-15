@@ -23,13 +23,12 @@ namespace TestChecker.Models
     // Class Vé Giao Việc
     public class TestJob : IModel
     {
-        public string Id { get; set; }          // Mã vé
-        public string Sender { get; set; }      // Người giao (VD: QuanLy_A)
-        public string Receiver { get; set; }    // Người nhận (VD: KTV_B)
-        public string Content { get; set; }     // Nội dung: "Test máy 01 lỗi nguồn"
+        public string Id { get; set; }
+        public string Sender { get; set; }
+        public string Receiver { get; set; }
+        public string Content { get; set; }
+        public string Status { get; set; }
+        public string Result { get; set; }
 
-        public string Status { get; set; }      // Trạng thái: PENDING (Chờ) -> DONE (Xong)
-        public string Result { get; set; }      // Kết quả: PASS / FAIL
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }
